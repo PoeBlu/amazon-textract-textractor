@@ -7,14 +7,14 @@ def processDocument(doc):
     for page in doc.pages:
         print("PAGE\n====================")
         for line in page.lines:
-            print("Line: {}--{}".format(line.text, line.confidence))
+            print(f"Line: {line.text}--{line.confidence}")
             for word in line.words:
-                print("Word: {}--{}".format(word.text, word.confidence))
+                print(f"Word: {word.text}--{word.confidence}")
         for table in page.tables:
             print("TABLE\n====================")
             for r, row in enumerate(table.rows):
                 for c, cell in enumerate(row.cells):
-                    print("Table[{}][{}] = {}-{}".format(r, c, cell.text, cell.confidence))
+                    print(f"Table[{r}][{c}] = {cell.text}-{cell.confidence}")
         print("Form (key/values)\n====================")
         for field in page.form.fields:
             k = ""
@@ -23,27 +23,25 @@ def processDocument(doc):
                 k = field.key.text
             if(field.value):
                 v = field.value.text
-            print("Field: Key: {}, Value: {}".format(k,v))
+            print(f"Field: Key: {k}, Value: {v}")
 
         #Get field by key
         key = "Phone Number:"
-        print("\nGet field by key ({}):\n====================".format(key))
-        f = page.form.getFieldByKey(key)
-        if(f):
-            print("Field: Key: {}, Value: {}".format(f.key.text, f.value.text))
+        print(f"\nGet field by key ({key}):\n====================")
+        if f := page.form.getFieldByKey(key):
+            print(f"Field: Key: {f.key.text}, Value: {f.value.text}")
 
         #Search field by key
         key = "address"
-        print("\nSearch field by key ({}):\n====================".format(key))
+        print(f"\nSearch field by key ({key}):\n====================")
         fields = page.form.searchFieldsByKey(key)
         for field in fields:
-            print("Field: Key: {}, Value: {}".format(field.key, field.value))
+            print(f"Field: Key: {field.key}, Value: {field.value}")
 
 def generateOutput(filePath, response):
     print("Generating output...")
     name, ext = FileHelper.getFileNameAndExtension(filePath)
-    opg = OutputGenerator(response,
-                "{}-v2-{}".format(name, ext), True, True)
+    opg = OutputGenerator(response, f"{name}-v2-{ext}", True, True)
     opg.run()
     opg.generateInsights(True, True, 'es', 'us-east-1')
 

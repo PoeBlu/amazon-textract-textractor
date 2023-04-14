@@ -8,7 +8,7 @@ class BoundingBox:
         self._top = top
 
     def __str__(self):
-        return "width: {}, height: {}, left: {}, top: {}".format(self._width, self._height, self._left, self._top)
+        return f"width: {self._width}, height: {self._height}, left: {self._left}, top: {self._top}"
 
     @property
     def width(self):
@@ -32,7 +32,7 @@ class Polygon:
         self._y = y
 
     def __str__(self):
-        return "x: {}, y: {}".format(self._x, self._y)
+        return f"x: {self._x}, y: {self._y}"
 
     @property
     def x(self):
@@ -47,16 +47,12 @@ class Geometry:
         boundingBox = geometry["BoundingBox"]
         polygon = geometry["Polygon"]
         bb = BoundingBox(boundingBox["Width"], boundingBox["Height"], boundingBox["Left"], boundingBox["Top"])
-        pgs = []
-        for pg in polygon:
-            pgs.append(Polygon(pg["X"], pg["Y"]))
-
+        pgs = [Polygon(pg["X"], pg["Y"]) for pg in polygon]
         self._boundingBox = bb
         self._polygon = pgs
 
     def __str__(self):
-        s = "BoundingBox: {}\n".format(str(self._boundingBox))
-        return s
+        return f"BoundingBox: {str(self._boundingBox)}\n"
 
     @property
     def boundingBox(self):
@@ -121,9 +117,9 @@ class Line:
     def __str__(self):
         s = "Line\n==========\n"
         s = s + self._text + "\n"
-        s = s + "Words\n----------\n"
+        s += "Words\n----------\n"
         for word in self._words:
-            s = s + "[{}]".format(str(word))
+            s = f"{s}[{str(word)}]"
         return s
 
     @property
@@ -279,25 +275,22 @@ class Field:
         self._value = None
 
         for item in block['Relationships']:
-            if(item["Type"] == "CHILD"):
+            if (item["Type"] == "CHILD"):
                 self._key = FieldKey(block, item['Ids'], blockMap)
-            elif(item["Type"] == "VALUE"):
+            elif (item["Type"] == "VALUE"):
                 for eid in item['Ids']:
                     vkvs = blockMap[eid]
-                    if 'VALUE' in vkvs['EntityTypes']:
-                        if('Relationships' in vkvs):
-                            for vitem in vkvs['Relationships']:
-                                if(vitem["Type"] == "CHILD"):
-                                    self._value = FieldValue(vkvs, vitem['Ids'], blockMap)
+                    if 'VALUE' in vkvs['EntityTypes'] and (
+                        'Relationships' in vkvs
+                    ):
+                        for vitem in vkvs['Relationships']:
+                            if(vitem["Type"] == "CHILD"):
+                                self._value = FieldValue(vkvs, vitem['Ids'], blockMap)
     def __str__(self):
         s = "\nField\n==========\n"
-        k = ""
-        v = ""
-        if(self._key):
-            k = str(self._key)
-        if(self._value):
-            v = str(self._value)
-        s = s + "Key: {}\nValue: {}".format(k, v)
+        k = str(self._key) if self._key else ""
+        v = str(self._value) if self._value else ""
+        s += f"Key: {k}\nValue: {v}"
         return s
 
     @property
@@ -328,18 +321,15 @@ class Form:
         return self._fields
 
     def getFieldByKey(self, key):
-        field = None
-        if(key in self._fieldsMap):
-            field = self._fieldsMap[key]
-        return field
+        return self._fieldsMap[key] if (key in self._fieldsMap) else None
     
     def searchFieldsByKey(self, key):
         searchKey = key.lower()
-        results = []
-        for field in self._fields:
-            if(field.key and searchKey in field.key.text.lower()):
-                results.append(field)
-        return results
+        return [
+            field
+            for field in self._fields
+            if (field.key and searchKey in field.key.text.lower())
+        ]
 
 class Cell:
 
@@ -418,7 +408,7 @@ class Row:
     def __str__(self):
         s = ""
         for cell in self._cells:
-            s = s + "[{}]".format(str(cell))
+            s = f"{s}[{str(cell)}]"
         return s
 
     @property
@@ -588,9 +578,8 @@ class Document:
 
     def __init__(self, responsePages):
 
-        if(not isinstance(responsePages, list)):
-            rps = []
-            rps.append(responsePages)
+        if (not isinstance(responsePages, list)):
+            rps = [responsePages]
             responsePages = rps
 
         self._responsePages = responsePages
@@ -615,13 +604,11 @@ class Document:
                 if('BlockType' in block and 'Id' in block):
                     blockMap[block['Id']] = block
 
-                if(block['BlockType'] == 'PAGE'):
+                if (block['BlockType'] == 'PAGE'):
                     if(documentPage):
                         documentPages.append({"Blocks" : documentPage})
                     documentPage = []
-                    documentPage.append(block)
-                else:
-                    documentPage.append(block)
+                documentPage.append(block)
         if(documentPage):
             documentPages.append({"Blocks" : documentPage})
         return documentPages, blockMap
@@ -646,8 +633,9 @@ class Document:
         return self._pages
 
     def getBlockById(self, blockId):
-        block = None
-        if(self._blockMap and blockId in self._blockMap):
-            block = self._blockMap[blockId]
-        return block
+        return (
+            self._blockMap[blockId]
+            if (self._blockMap and blockId in self._blockMap)
+            else None
+        )
 

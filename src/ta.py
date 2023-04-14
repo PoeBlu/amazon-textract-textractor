@@ -26,10 +26,9 @@ class TextMedicalAnalyzer:
         self.client = AwsHelper().getClient('comprehendmedical', self.awsRegion)
 
     def getMedicalEntities(self, text):
-        response = self.client.detect_entities(
+        return self.client.detect_entities(
             Text=text,
         )
-        return response
 
     def getPhi(self, text):
         response = self.client.detect_phi(
@@ -45,30 +44,19 @@ class TextAnalyzer:
         self.client = AwsHelper().getClient('comprehend', self.awsRegion)
 
     def getSentiment(self, text):
-        response = self.client.detect_sentiment(
-            Text=text,
-            LanguageCode=self.languageCode
+        return self.client.detect_sentiment(
+            Text=text, LanguageCode=self.languageCode
         )
-        return response
 
     def getSyntax(self, text):
-        response = self.client.detect_syntax(
-            Text=text,
-            LanguageCode=self.languageCode
-        )
-
-        return response
+        return self.client.detect_syntax(Text=text, LanguageCode=self.languageCode)
 
     def getEntities(self, text):
-        response = self.client.detect_entities(
-            Text=text,
-            LanguageCode=self.languageCode
+        return self.client.detect_entities(
+            Text=text, LanguageCode=self.languageCode
         )
-        return response
 
     def getKeyPhrases(self, text):
-        response = self.client.detect_key_phrases(
-            Text=text,
-            LanguageCode=self.languageCode
+        return self.client.detect_key_phrases(
+            Text=text, LanguageCode=self.languageCode
         )
-        return response

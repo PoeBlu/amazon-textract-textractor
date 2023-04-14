@@ -17,14 +17,14 @@ class Input:
 
     def __str__(self):
         s = "---------------------------------------------\n"
-        if(not self.isLocalDocument):
-            s = s + "Bucket Name: {}\n".format(self.bucketName)
-        s = s + "Document: {}\n".format(self.documentPath)
-        s = s + "Text: {}\n".format(self.detectText)
-        s = s + "Form: {}\n".format(self.detectForms)
-        s = s + "Table: {}\n".format(self.detectTables)
-        s = s + "AWS Region: {}".format(self.awsRegion)
-        s = s + "---------------------------------------------\n"
+        if (not self.isLocalDocument):
+            s += f"Bucket Name: {self.bucketName}\n"
+        s += f"Document: {self.documentPath}\n"
+        s += f"Text: {self.detectText}\n"
+        s += f"Form: {self.detectForms}\n"
+        s += f"Table: {self.detectTables}\n"
+        s += f"AWS Region: {self.awsRegion}"
+        s += "---------------------------------------------\n"
 
 class ImageProcessor:
     def __init__(self, inputParameters):
@@ -76,8 +76,7 @@ class ImageProcessor:
         return response
 
     def run(self):
-        response = self._callTextract()
-        return response
+        return self._callTextract()
 
 class PdfProcessor:
     def __init__(self, inputParameters):
@@ -136,8 +135,6 @@ class PdfProcessor:
 
     def _getJobResults(self, jobId):
 
-        pages = []
-
         time.sleep(5)
 
         client = AwsHelper().getClient('textract', self.inputParameters.awsRegion)
@@ -145,14 +142,10 @@ class PdfProcessor:
             response = client.get_document_text_detection(JobId=jobId)
         else:
             response = client.get_document_analysis(JobId=jobId)
-        pages.append(response)
-        print("Resultset page recieved: {}".format(len(pages)))
-        nextToken = None
-        if('NextToken' in response):
-            nextToken = response['NextToken']
-            #print("Next token: {}".format(nextToken))
-
-        while(nextToken):
+        pages = [response]
+        print(f"Resultset page recieved: {len(pages)}")
+        nextToken = response['NextToken'] if ('NextToken' in response) else None
+        while nextToken:
             time.sleep(5)
 
             if(not self.inputParameters.detectForms and not self.inputParameters.detectTables):
@@ -161,24 +154,19 @@ class PdfProcessor:
                 response = client.get_document_analysis(JobId=jobId, NextToken=nextToken)
 
             pages.append(response)
-            print("Resultset page recieved: {}".format(len(pages)))
-            nextToken = None
-            if('NextToken' in response):
-                nextToken = response['NextToken']
-                #print("Next token: {}".format(nextToken))
-
-            #if(len(pages) > 20):
-            #    break
+            print(f"Resultset page recieved: {len(pages)}")
+            nextToken = response['NextToken'] if ('NextToken' in response) else None
+                #if(len(pages) > 20):
+                #    break
 
         return pages
 
     def run(self):
         jobId = self._startJob()
-        print("Started Asyc Job with Id: {}".format(jobId))
+        print(f"Started Asyc Job with Id: {jobId}")
         status = self._isJobComplete(jobId)
-        if(status == "SUCCEEDED"):
-            responsePages = self._getJobResults(jobId)
-            return responsePages
+        if (status == "SUCCEEDED"):
+            return self._getJobResults(jobId)
 
 class DocumentProcessor:
 
@@ -201,15 +189,11 @@ class DocumentProcessor:
         if(not ip.bucketName and not ip.documentPath):
             raise Exception("Document is required.")
 
-        if(ip.bucketName):
-            ip.isLocalDocument = False
-        else:
-            ip.isLocalDocument = True
-
+        ip.isLocalDocument = not ip.bucketName
         ext = FileHelper.getFileExtenstion(ip.documentPath).lower()
-        if(ext == "pdf"):
+        if (ext == "pdf"):
             ip.documentType = "PDF"
-        elif(ext == "jpg" or ext == "jpeg" or ext == "png"):
+        elif ext in ["jpg", "jpeg", "png"]:
             ip.documentType = "IMAGE"
         else:
             raise Exception("Document should be jpg/jpeg, png or pdf.")
@@ -227,15 +211,12 @@ class DocumentProcessor:
         print("Calling Textract...")
 
         # Call and Get results from Textract
-        if(self.inputParameters.documentType == "IMAGE"):
+        if (self.inputParameters.documentType == "IMAGE"):
             ip = ImageProcessor(self.inputParameters)
             response = ip.run()
-            responsePages = []
-            responsePages.append(response)
-            self.responsePages = responsePages
+            responsePages = [response]
         else:
             pp = PdfProcessor(self.inputParameters)
             responsePages = pp.run()
-            self.responsePages = responsePages
-
+        self.responsePages = responsePages
         return self.responsePages

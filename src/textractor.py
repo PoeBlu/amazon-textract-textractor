@@ -10,15 +10,15 @@ from helper import FileHelper, S3Helper
 class Textractor:
     def getInputParameters(self, args):
         event = {}
-        i = 0
-        if(args):
-            while(i < len(args)):
-                if(args[i] == '--documents'):
+        if args:
+            i = 0
+            while (i < len(args)):
+                if (args[i] == '--documents'):
                     event['documents'] = args[i+1]
-                    i = i + 1
-                if(args[i] == '--region'):
+                    i += 1
+                if (args[i] == '--region'):
                     event['region'] = args[i+1]
-                    i = i + 1
+                    i += 1
                 if(args[i] == '--text'):
                     event['text'] = True
                 if(args[i] == '--forms'):
@@ -29,20 +29,18 @@ class Textractor:
                     event['insights'] = True
                 if(args[i] == '--medical-insights'):
                     event['medical-insights'] = True
-                if(args[i] == '--translate'):
+                if (args[i] == '--translate'):
                     event['translate'] = args[i+1]
-                    i = i + 1
+                    i += 1
 
-                i = i + 1
+                i += 1
         return event
 
     def validateInput(self, args):
 
         event = self.getInputParameters(args)
 
-        ips = {}
-
-        if(not 'documents' in event):
+        if 'documents' not in event:
             raise Exception("Document or path to a foler or S3 bucket containing documents is required.")
 
         inputDocument = event['documents']
@@ -52,12 +50,11 @@ class Textractor:
         documents = []
         awsRegion = 'us-east-1'
 
-        if(idl.startswith("s3://")):
+        if (idl.startswith("s3://")):
             o = urlparse(inputDocument)
             bucketName = o.netloc
             path = o.path[1:]
-            ar = S3Helper.getS3BucketRegion(bucketName)
-            if(ar):
+            if ar := S3Helper.getS3BucketRegion(bucketName):
                 awsRegion = ar
 
             if(idl.endswith("/")):
@@ -75,23 +72,20 @@ class Textractor:
             if('region' in event):
                 awsRegion = event['region']
 
-        ips["bucketName"] = bucketName
-        ips["documents"] = documents
-        ips["awsRegion"] = awsRegion
-        ips["text"] = ('text' in event)
-        ips["forms"] = ('forms' in event)
-        ips["tables"] = ('tables' in event)
-        ips["insights"] = ('insights' in event)
-        ips["medical-insights"] = ('medical-insights' in event)
-        if("translate" in event):
-            ips["translate"] = event["translate"]
-        else:
-            ips["translate"] = ""
-
-        return ips
+        return {
+            "bucketName": bucketName,
+            "documents": documents,
+            "awsRegion": awsRegion,
+            "text": 'text' in event,
+            "forms": 'forms' in event,
+            "tables": 'tables' in event,
+            "insights": 'insights' in event,
+            "medical-insights": 'medical-insights' in event,
+            "translate": event["translate"] if ("translate" in event) else "",
+        }
 
     def processDocument(self, ips, i, document):
-        print("\nTextracting Document # {}: {}".format(i, document))
+        print(f"\nTextracting Document # {i}: {document}")
         print('=' * (len(document)+30))
 
         # Get document textracted
@@ -104,18 +98,16 @@ class Textractor:
         #Generate output files
         print("Generating output...")
         name, ext = FileHelper.getFileNameAndExtension(document)
-        opg = OutputGenerator(response,
-                    "{}-{}".format(name, ext),
-                    ips["forms"], ips["tables"])
+        opg = OutputGenerator(response, f"{name}-{ext}", ips["forms"], ips["tables"])
         opg.run()
 
         if(ips["insights"] or ips["medical-insights"] or ips["translate"]):
             opg.generateInsights(ips["insights"], ips["medical-insights"], ips["translate"], ips["awsRegion"])
 
-        print("{} textracted successfully.".format(document))
+        print(f"{document} textracted successfully.")
 
     def printFormatException(self, e):
-        print("Invalid input: {}".format(e))
+        print(f"Invalid input: {e}")
         print("Valid format:")
         print('- python3 textractor.py --documents mydoc.jpg --text --forms --tables --region us-east-1')
         print('- python3 textractor.py --documents ./myfolder/ --text --forms --tables')
@@ -136,7 +128,7 @@ class Textractor:
 
         print("\n")
         print('*' * 60)
-        print("Total input documents: {}".format(totalDocuments))
+        print(f"Total input documents: {totalDocuments}")
         print('*' * 60)
 
         for document in ips["documents"]:
@@ -144,8 +136,8 @@ class Textractor:
 
             remaining = len(ips["documents"])-i
 
-            if(remaining > 0):
-                print("\nRemaining documents: {}".format(remaining))
+            if (remaining > 0):
+                print(f"\nRemaining documents: {remaining}")
 
                 print("\nTaking a short break...")
                 time.sleep(20)
@@ -155,7 +147,7 @@ class Textractor:
 
         print("\n")
         print('*' * 60)
-        print("Successfully textracted documents: {}".format(totalDocuments))
+        print(f"Successfully textracted documents: {totalDocuments}")
         print('*' * 60)
         print("\n")
         #except Exception as e:
